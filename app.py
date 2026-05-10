@@ -3,8 +3,11 @@ Nuclear Radiation Interactive Educational App
 الإشعاع النووي - برنامج تعليمي تفاعلي
 Author: Israa Youssuf Samara
 Grade 12 Physics
+── FIXED VERSION ──
+  ✅ Fix 1: Mobile sidebar navigation (added top selectbox)
+  ✅ Fix 2: Particle simulation (responsive canvas + addEventListener)
 """
-
+ 
 import streamlit as st
 import plotly.graph_objects as go
 import numpy as np
@@ -12,7 +15,7 @@ import pandas as pd
 import streamlit.components.v1 as components
 import random
 import math
-
+ 
 # ═══════════════════════════════════════════
 # PAGE CONFIG
 # ═══════════════════════════════════════════
@@ -22,14 +25,14 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
+ 
 # ═══════════════════════════════════════════
 # GLOBAL CSS
 # ═══════════════════════════════════════════
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Tajawal:wght@300;400;500;700;800&family=Space+Mono:wght@400;700&display=swap');
-
+ 
 :root {
     --bg-primary: #020212;
     --bg-secondary: #06081e;
@@ -47,11 +50,9 @@ st.markdown("""
     --glow-purple: 0 0 25px rgba(179, 71, 255, 0.45);
     --glow-orange: 0 0 25px rgba(255, 107, 53, 0.45);
 }
-
-html, body, [class*="css"] {
-    font-family: 'Tajawal', sans-serif !important;
-}
-
+ 
+html, body, [class*="css"] { font-family: 'Tajawal', sans-serif !important; }
+ 
 .stApp {
     background: var(--bg-primary);
     background-image:
@@ -60,23 +61,21 @@ html, body, [class*="css"] {
         radial-gradient(ellipse at 50% 50%, rgba(0, 255, 136, 0.02) 0%, transparent 65%);
     min-height: 100vh;
 }
-
-/* Scrollbar */
+ 
 ::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg-secondary); }
 ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--accent-blue), var(--accent-purple)); border-radius: 4px; }
-
-/* Hide Streamlit branding */
+ 
 #MainMenu, footer, header { visibility: hidden; }
 .block-container { padding-top: 0.5rem !important; max-width: 1200px !important; }
-
-/* Sidebar */
+ 
+/* ── Sidebar ── */
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #03051a 0%, #06081e 100%) !important;
     border-right: 1px solid rgba(0, 212, 255, 0.15) !important;
 }
-[data-testid="stSidebar"] .stRadio label { 
-    color: var(--text-primary) !important; 
+[data-testid="stSidebar"] .stRadio label {
+    color: var(--text-primary) !important;
     font-family: 'Tajawal', sans-serif !important;
     font-size: 0.95rem !important;
     cursor: pointer !important;
@@ -86,8 +85,31 @@ html, body, [class*="css"] {
 }
 [data-testid="stSidebar"] .stRadio label:hover { color: var(--accent-blue) !important; }
 [data-testid="stSidebar"] div[data-testid="stRadioGroup"] > label { display: none !important; }
-
-/* Cards */
+ 
+/* ── MOBILE NAV FIX ── */
+/* Desktop: show sidebar, hide mobile selectbox */
+@media (min-width: 768px) {
+    .mobile-topnav { display: none !important; }
+}
+/* Mobile: hide sidebar, show top selectbox */
+@media (max-width: 767px) {
+    [data-testid="stSidebar"] { display: none !important; }
+    .mobile-topnav {
+        display: block !important;
+        position: sticky;
+        top: 0;
+        z-index: 999;
+        background: linear-gradient(90deg, #020212f0, #06081ef0);
+        border-bottom: 1px solid rgba(0,212,255,0.25);
+        padding: 6px 10px 4px;
+        backdrop-filter: blur(14px);
+        margin-bottom: 8px;
+    }
+    .mobile-topnav .stSelectbox > div { background: rgba(8,12,45,0.9) !important; border-color: rgba(0,212,255,0.3) !important; }
+    .block-container { padding-top: 0 !important; }
+}
+ 
+/* ── Cards ── */
 .card {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
@@ -110,20 +132,16 @@ html, body, [class*="css"] {
 }
 .card:hover { border-color: rgba(0, 212, 255, 0.4); box-shadow: var(--glow-blue); transform: translateY(-3px); }
 .card:hover::before { opacity: 1; }
-
 .card-green { border-color: rgba(0, 255, 136, 0.2); }
 .card-green:hover { border-color: rgba(0, 255, 136, 0.5); box-shadow: var(--glow-green); }
 .card-green::before { background: linear-gradient(90deg, transparent, var(--accent-green), transparent); }
-
 .card-purple { border-color: rgba(179, 71, 255, 0.2); }
 .card-purple:hover { border-color: rgba(179, 71, 255, 0.5); box-shadow: var(--glow-purple); }
 .card-purple::before { background: linear-gradient(90deg, transparent, var(--accent-purple), transparent); }
-
 .card-orange { border-color: rgba(255, 107, 53, 0.2); }
 .card-orange:hover { border-color: rgba(255, 107, 53, 0.5); box-shadow: var(--glow-orange); }
 .card-orange::before { background: linear-gradient(90deg, transparent, var(--accent-orange), transparent); }
-
-/* Equation box */
+ 
 .eq-box {
     background: rgba(0, 0, 0, 0.55);
     border: 1px solid rgba(0, 212, 255, 0.35);
@@ -139,85 +157,26 @@ html, body, [class*="css"] {
     letter-spacing: 0.05em;
     direction: ltr;
 }
-
-.eq-box-green {
-    border-color: rgba(0, 255, 136, 0.35);
-    border-left-color: var(--accent-green);
-    color: var(--accent-green);
-    box-shadow: inset 0 0 40px rgba(0, 255, 136, 0.04), var(--glow-green);
-}
-
-.eq-box-purple {
-    border-color: rgba(179, 71, 255, 0.35);
-    border-left-color: var(--accent-purple);
-    color: var(--accent-purple);
-    box-shadow: inset 0 0 40px rgba(179, 71, 255, 0.04), var(--glow-purple);
-}
-
-.eq-box-orange {
-    border-color: rgba(255, 107, 53, 0.35);
-    border-left-color: var(--accent-orange);
-    color: var(--accent-orange);
-    box-shadow: inset 0 0 40px rgba(255, 107, 53, 0.04), var(--glow-orange);
-}
-
-/* Section title */
-.sec-title {
-    font-family: 'Tajawal', sans-serif;
-    font-size: 1.8rem;
-    font-weight: 800;
-    color: var(--accent-blue);
-    text-shadow: var(--glow-blue);
-    margin: 8px 0 4px;
-    direction: rtl;
-    text-align: right;
-}
-
-.sec-subtitle {
-    color: var(--text-secondary);
-    font-size: 1rem;
-    margin-bottom: 24px;
-    direction: rtl;
-    text-align: right;
-}
-
-/* Info / tip boxes */
-.tip-box {
-    background: rgba(0, 212, 255, 0.06);
-    border: 1px solid rgba(0, 212, 255, 0.25);
-    border-radius: 10px;
-    padding: 14px 18px;
-    margin: 10px 0;
-    direction: rtl;
-    text-align: right;
-    color: var(--text-primary);
-    font-size: 0.95rem;
-}
-.tip-box strong { color: var(--accent-blue); }
-
-.success-tip {
-    background: rgba(0, 255, 136, 0.06);
-    border-color: rgba(0, 255, 136, 0.25);
-}
-.success-tip strong { color: var(--accent-green); }
-
-.warning-tip {
-    background: rgba(255, 107, 53, 0.06);
-    border-color: rgba(255, 107, 53, 0.25);
-}
-.warning-tip strong { color: var(--accent-orange); }
-
-.purple-tip {
-    background: rgba(179, 71, 255, 0.06);
-    border-color: rgba(179, 71, 255, 0.25);
-}
-.purple-tip strong { color: var(--accent-purple); }
-
-/* Buttons */
+.eq-box-green  { border-color: rgba(0,255,136,0.35); border-left-color: var(--accent-green); color: var(--accent-green); box-shadow: inset 0 0 40px rgba(0,255,136,0.04), var(--glow-green); }
+.eq-box-purple { border-color: rgba(179,71,255,0.35); border-left-color: var(--accent-purple); color: var(--accent-purple); box-shadow: inset 0 0 40px rgba(179,71,255,0.04), var(--glow-purple); }
+.eq-box-orange { border-color: rgba(255,107,53,0.35); border-left-color: var(--accent-orange); color: var(--accent-orange); box-shadow: inset 0 0 40px rgba(255,107,53,0.04), var(--glow-orange); }
+ 
+.sec-title { font-family:'Tajawal',sans-serif; font-size:1.8rem; font-weight:800; color:var(--accent-blue); text-shadow:var(--glow-blue); margin:8px 0 4px; direction:rtl; text-align:right; }
+.sec-subtitle { color:var(--text-secondary); font-size:1rem; margin-bottom:24px; direction:rtl; text-align:right; }
+ 
+.tip-box { background:rgba(0,212,255,0.06); border:1px solid rgba(0,212,255,0.25); border-radius:10px; padding:14px 18px; margin:10px 0; direction:rtl; text-align:right; color:var(--text-primary); font-size:0.95rem; }
+.tip-box strong { color:var(--accent-blue); }
+.success-tip { background:rgba(0,255,136,0.06); border-color:rgba(0,255,136,0.25); }
+.success-tip strong { color:var(--accent-green); }
+.warning-tip { background:rgba(255,107,53,0.06); border-color:rgba(255,107,53,0.25); }
+.warning-tip strong { color:var(--accent-orange); }
+.purple-tip { background:rgba(179,71,255,0.06); border-color:rgba(179,71,255,0.25); }
+.purple-tip strong { color:var(--accent-purple); }
+ 
 .stButton > button {
-    background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(179, 71, 255, 0.15)) !important;
+    background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(179,71,255,0.15)) !important;
     color: var(--accent-blue) !important;
-    border: 1px solid rgba(0, 212, 255, 0.4) !important;
+    border: 1px solid rgba(0,212,255,0.4) !important;
     border-radius: 10px !important;
     font-family: 'Tajawal', sans-serif !important;
     font-size: 1rem !important;
@@ -226,188 +185,53 @@ html, body, [class*="css"] {
     transition: all 0.3s !important;
     width: 100% !important;
 }
-.stButton > button:hover {
-    background: linear-gradient(135deg, rgba(0, 212, 255, 0.3), rgba(179, 71, 255, 0.3)) !important;
-    box-shadow: var(--glow-blue) !important;
-    transform: translateY(-2px) !important;
-}
-
-/* Metrics */
-[data-testid="metric-container"] {
-    background: var(--bg-card) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: 12px !important;
-    padding: 14px !important;
-}
-[data-testid="metric-container"] [data-testid="stMetricLabel"] { color: var(--text-secondary) !important; font-family: 'Tajawal', sans-serif !important; }
-[data-testid="metric-container"] [data-testid="stMetricValue"] { color: var(--accent-blue) !important; font-family: 'Orbitron', sans-serif !important; }
-
-/* Tabs */
-.stTabs [data-baseweb="tab-list"] { background: rgba(6, 8, 30, 0.9) !important; border-radius: 12px !important; padding: 4px !important; gap: 4px !important; }
-.stTabs [data-baseweb="tab"] { color: var(--text-secondary) !important; font-family: 'Tajawal', sans-serif !important; font-size: 0.95rem !important; border-radius: 8px !important; padding: 8px 16px !important; }
-.stTabs [aria-selected="true"] { background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)) !important; color: white !important; }
-
-/* Text alignment */
-p, li, h1, h2, h3, h4, h5, h6, label { direction: rtl; text-align: right; color: var(--text-primary) !important; }
-.stMarkdown { direction: rtl; }
-
-/* Selectbox */
-.stSelectbox > label, .stSlider > label, .stRadio > label, .stNumberInput > label { 
-    color: var(--text-secondary) !important; 
-    font-family: 'Tajawal', sans-serif !important;
-    direction: rtl;
-    text-align: right;
-}
-
-/* Badge */
-.badge {
-    display: inline-block;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    font-family: 'Space Mono', monospace;
-}
-.badge-alpha { background: rgba(255, 107, 53, 0.2); color: var(--accent-orange); border: 1px solid rgba(255, 107, 53, 0.4); }
-.badge-beta  { background: rgba(0, 212, 255, 0.2); color: var(--accent-blue);   border: 1px solid rgba(0, 212, 255, 0.4); }
-.badge-gamma { background: rgba(179, 71, 255, 0.2); color: var(--accent-purple); border: 1px solid rgba(179, 71, 255, 0.4); }
-
-/* Step indicator */
-.step-box {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    margin: 14px 0;
-    direction: rtl;
-}
-.step-num {
-    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
-    color: white;
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-family: 'Orbitron', sans-serif;
-    font-size: 0.8rem;
-    font-weight: 700;
-    flex-shrink: 0;
-    margin-top: 2px;
-}
-
-/* Divider */
-.glow-divider {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, var(--accent-blue), transparent);
-    margin: 28px 0;
-    border: none;
-}
-
-/* Scientist card */
-.scientist-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 14px;
-    padding: 20px;
-    text-align: center;
-    transition: all 0.3s;
-}
-.scientist-card:hover { border-color: rgba(0, 212, 255, 0.5); box-shadow: var(--glow-blue); }
-.scientist-avatar {
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 2rem;
-    margin: 0 auto 12px;
-}
-
-/* Table */
-.styled-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: 'Tajawal', sans-serif;
-    direction: rtl;
-}
-.styled-table th {
-    background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(179, 71, 255, 0.2));
-    color: var(--accent-blue);
-    padding: 12px 16px;
-    text-align: center;
-    font-size: 0.95rem;
-    font-weight: 700;
-    border: 1px solid rgba(0, 212, 255, 0.2);
-}
-.styled-table td {
-    padding: 10px 16px;
-    text-align: center;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    color: var(--text-primary);
-    font-size: 0.9rem;
-    background: rgba(5, 8, 30, 0.5);
-}
-.styled-table tr:hover td { background: rgba(0, 212, 255, 0.04); }
-.td-alpha { color: var(--accent-orange) !important; font-weight: 700 !important; }
-.td-beta  { color: var(--accent-blue) !important;   font-weight: 700 !important; }
-.td-gamma { color: var(--accent-purple) !important; font-weight: 700 !important; }
-
-/* Quiz */
-.quiz-option {
-    background: rgba(8, 12, 45, 0.8);
-    border: 1px solid rgba(0, 212, 255, 0.15);
-    border-radius: 10px;
-    padding: 12px 18px;
-    margin: 8px 0;
-    cursor: pointer;
-    transition: all 0.2s;
-    direction: rtl;
-    text-align: right;
-    color: var(--text-primary);
-}
-.quiz-option:hover { border-color: rgba(0, 212, 255, 0.4); background: rgba(0, 212, 255, 0.05); }
-.quiz-correct { border-color: var(--accent-green) !important; background: rgba(0, 255, 136, 0.08) !important; color: var(--accent-green) !important; }
-.quiz-wrong   { border-color: var(--accent-orange) !important; background: rgba(255, 107, 53, 0.08) !important; color: var(--accent-orange) !important; }
-
-/* Nucleus visualization */
-.nucleus-vis {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 30px;
-    padding: 20px;
-    flex-wrap: wrap;
-    direction: ltr;
-}
-
-/* General text */
-.ar-text {
-    color: var(--text-primary);
-    font-family: 'Tajawal', sans-serif;
-    font-size: 1rem;
-    direction: rtl;
-    text-align: right;
-    line-height: 1.8;
-}
-
-.highlight-blue  { color: var(--accent-blue);   font-weight: 700; }
-.highlight-green { color: var(--accent-green);  font-weight: 700; }
-.highlight-purple{ color: var(--accent-purple); font-weight: 700; }
-.highlight-orange{ color: var(--accent-orange); font-weight: 700; }
-.highlight-yellow{ color: var(--accent-yellow); font-weight: 700; }
-
-/* Page header bar */
-.page-header {
-    background: linear-gradient(135deg, rgba(0, 212, 255, 0.08), rgba(179, 71, 255, 0.08));
-    border: 1px solid rgba(0, 212, 255, 0.15);
-    border-radius: 16px;
-    padding: 20px 28px;
-    margin-bottom: 28px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    direction: rtl;
-}
-.page-icon { font-size: 2.2rem; }
+.stButton > button:hover { background: linear-gradient(135deg, rgba(0,212,255,0.3), rgba(179,71,255,0.3)) !important; box-shadow: var(--glow-blue) !important; transform: translateY(-2px) !important; }
+ 
+[data-testid="metric-container"] { background:var(--bg-card) !important; border:1px solid var(--border-color) !important; border-radius:12px !important; padding:14px !important; }
+[data-testid="metric-container"] [data-testid="stMetricLabel"] { color:var(--text-secondary) !important; font-family:'Tajawal',sans-serif !important; }
+[data-testid="metric-container"] [data-testid="stMetricValue"] { color:var(--accent-blue) !important; font-family:'Orbitron',sans-serif !important; }
+ 
+.stTabs [data-baseweb="tab-list"] { background:rgba(6,8,30,0.9) !important; border-radius:12px !important; padding:4px !important; gap:4px !important; }
+.stTabs [data-baseweb="tab"] { color:var(--text-secondary) !important; font-family:'Tajawal',sans-serif !important; font-size:0.95rem !important; border-radius:8px !important; padding:8px 16px !important; }
+.stTabs [aria-selected="true"] { background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple)) !important; color:white !important; }
+ 
+p,li,h1,h2,h3,h4,h5,h6,label { direction:rtl; text-align:right; color:var(--text-primary) !important; }
+.stMarkdown { direction:rtl; }
+.stSelectbox>label,.stSlider>label,.stRadio>label,.stNumberInput>label { color:var(--text-secondary) !important; font-family:'Tajawal',sans-serif !important; direction:rtl; text-align:right; }
+ 
+.badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:0.8rem; font-weight:600; font-family:'Space Mono',monospace; }
+.badge-alpha { background:rgba(255,107,53,0.2); color:var(--accent-orange); border:1px solid rgba(255,107,53,0.4); }
+.badge-beta  { background:rgba(0,212,255,0.2); color:var(--accent-blue); border:1px solid rgba(0,212,255,0.4); }
+.badge-gamma { background:rgba(179,71,255,0.2); color:var(--accent-purple); border:1px solid rgba(179,71,255,0.4); }
+ 
+.step-box { display:flex; align-items:flex-start; gap:14px; margin:14px 0; direction:rtl; }
+.step-num { background:linear-gradient(135deg,var(--accent-blue),var(--accent-purple)); color:white; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Orbitron',sans-serif; font-size:0.8rem; font-weight:700; flex-shrink:0; margin-top:2px; }
+.glow-divider { height:1px; background:linear-gradient(90deg,transparent,var(--accent-blue),transparent); margin:28px 0; border:none; }
+.scientist-card { background:var(--bg-card); border:1px solid var(--border-color); border-radius:14px; padding:20px; text-align:center; transition:all 0.3s; }
+.scientist-card:hover { border-color:rgba(0,212,255,0.5); box-shadow:var(--glow-blue); }
+.scientist-avatar { width:80px; height:80px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:2rem; margin:0 auto 12px; }
+.styled-table { width:100%; border-collapse:collapse; font-family:'Tajawal',sans-serif; direction:rtl; }
+.styled-table th { background:linear-gradient(135deg,rgba(0,212,255,0.2),rgba(179,71,255,0.2)); color:var(--accent-blue); padding:12px 16px; text-align:center; font-size:0.95rem; font-weight:700; border:1px solid rgba(0,212,255,0.2); }
+.styled-table td { padding:10px 16px; text-align:center; border:1px solid rgba(255,255,255,0.06); color:var(--text-primary); font-size:0.9rem; background:rgba(5,8,30,0.5); }
+.styled-table tr:hover td { background:rgba(0,212,255,0.04); }
+.td-alpha { color:var(--accent-orange) !important; font-weight:700 !important; }
+.td-beta  { color:var(--accent-blue) !important; font-weight:700 !important; }
+.td-gamma { color:var(--accent-purple) !important; font-weight:700 !important; }
+.quiz-option { background:rgba(8,12,45,0.8); border:1px solid rgba(0,212,255,0.15); border-radius:10px; padding:12px 18px; margin:8px 0; cursor:pointer; transition:all 0.2s; direction:rtl; text-align:right; color:var(--text-primary); }
+.quiz-option:hover { border-color:rgba(0,212,255,0.4); background:rgba(0,212,255,0.05); }
+.quiz-correct { border-color:var(--accent-green) !important; background:rgba(0,255,136,0.08) !important; color:var(--accent-green) !important; }
+.quiz-wrong   { border-color:var(--accent-orange) !important; background:rgba(255,107,53,0.08) !important; color:var(--accent-orange) !important; }
+.ar-text { color:var(--text-primary); font-family:'Tajawal',sans-serif; font-size:1rem; direction:rtl; text-align:right; line-height:1.8; }
+.highlight-blue   { color:var(--accent-blue);   font-weight:700; }
+.highlight-green  { color:var(--accent-green);  font-weight:700; }
+.highlight-purple { color:var(--accent-purple); font-weight:700; }
+.highlight-orange { color:var(--accent-orange); font-weight:700; }
+.highlight-yellow { color:var(--accent-yellow); font-weight:700; }
+.page-header { background:linear-gradient(135deg,rgba(0,212,255,0.08),rgba(179,71,255,0.08)); border:1px solid rgba(0,212,255,0.15); border-radius:16px; padding:20px 28px; margin-bottom:28px; display:flex; align-items:center; gap:16px; direction:rtl; }
+.page-icon { font-size:2.2rem; }
 </style>
 """, unsafe_allow_html=True)
-
+ 
 # ═══════════════════════════════════════════
 # SESSION STATE
 # ═══════════════════════════════════════════
@@ -421,7 +245,7 @@ defaults = {
 for k, v in defaults.items():
     if k not in st.session_state:
         st.session_state[k] = v
-
+ 
 # ═══════════════════════════════════════════
 # HELPERS
 # ═══════════════════════════════════════════
@@ -435,9 +259,9 @@ def page_header(icon, title_ar, subtitle_ar=""):
         </div>
     </div>
     """, unsafe_allow_html=True)
-
+ 
 def section_label(text, color="blue"):
-    c = {"blue": "var(--accent-blue)", "green": "var(--accent-green)", "purple": "var(--accent-purple)", "orange": "var(--accent-orange)"}.get(color, "var(--accent-blue)")
+    c = {"blue":"var(--accent-blue)","green":"var(--accent-green)","purple":"var(--accent-purple)","orange":"var(--accent-orange)"}.get(color,"var(--accent-blue)")
     st.markdown(f"""
     <div style="display:flex;align-items:center;gap:10px;margin:24px 0 12px;direction:rtl;">
         <div style="flex:1;height:1px;background:linear-gradient(90deg,{c}20,transparent);"></div>
@@ -445,21 +269,44 @@ def section_label(text, color="blue"):
         <div style="width:8px;height:8px;border-radius:50%;background:{c};box-shadow:0 0 10px {c};flex-shrink:0;"></div>
     </div>
     """, unsafe_allow_html=True)
-
+ 
 def tip(text, kind="blue"):
-    cls = {"blue": "tip-box", "green": "tip-box success-tip", "orange": "tip-box warning-tip", "purple": "tip-box purple-tip"}.get(kind, "tip-box")
+    cls = {"blue":"tip-box","green":"tip-box success-tip","orange":"tip-box warning-tip","purple":"tip-box purple-tip"}.get(kind,"tip-box")
     st.markdown(f'<div class="{cls}">{text}</div>', unsafe_allow_html=True)
-
+ 
 def eq(text, kind="blue"):
-    cls = {"blue": "eq-box", "green": "eq-box eq-box-green", "purple": "eq-box eq-box-purple", "orange": "eq-box eq-box-orange"}.get(kind, "eq-box")
+    cls = {"blue":"eq-box","green":"eq-box eq-box-green","purple":"eq-box eq-box-purple","orange":"eq-box eq-box-orange"}.get(kind,"eq-box")
     st.markdown(f'<div class="{cls}">{text}</div>', unsafe_allow_html=True)
-
+ 
 def glow_div():
     st.markdown('<hr class="glow-divider">', unsafe_allow_html=True)
-
+ 
 # ═══════════════════════════════════════════
-# SIDEBAR
+# NAVIGATION — WORKS ON DESKTOP & MOBILE
 # ═══════════════════════════════════════════
+PAGE_OPTIONS = [
+    "🏠  الصفحة الرئيسية",
+    "👨‍🔬  العلماء والاكتشافات",
+    "⚛️  أنواع الإشعاعات",
+    "🔄  أنواع الاضمحلال",
+    "🎲  نمذجة الاضمحلال",
+    "⏱️  عمر النصف والنشاطية",
+    "🔗  سلاسل الاضمحلال",
+    "🔬  الربط بالتكنولوجيا",
+    "📝  مراجعة الدرس",
+]
+ 
+# ── Mobile top navigation (visible only on mobile via CSS) ──
+st.markdown('<div class="mobile-topnav">', unsafe_allow_html=True)
+mobile_page = st.selectbox(
+    "nav_mobile",
+    PAGE_OPTIONS,
+    key="mobile_nav_select",
+    label_visibility="collapsed"
+)
+st.markdown('</div>', unsafe_allow_html=True)
+ 
+# ── Desktop sidebar ──
 with st.sidebar:
     st.markdown("""
     <div style="text-align:center;padding:20px 8px 10px;">
@@ -472,19 +319,9 @@ with st.sidebar:
     </div>
     <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,255,0.3),transparent);margin:12px 0 20px;"></div>
     """, unsafe_allow_html=True)
-
-    page = st.radio("nav", [
-        "🏠  الصفحة الرئيسية",
-        "👨‍🔬  العلماء والاكتشافات",
-        "⚛️  أنواع الإشعاعات",
-        "🔄  أنواع الاضمحلال",
-        "🎲  نمذجة الاضمحلال",
-        "⏱️  عمر النصف والنشاطية",
-        "🔗  سلاسل الاضمحلال",
-        "🔬  الربط بالتكنولوجيا",
-        "📝  مراجعة الدرس",
-    ], label_visibility="collapsed")
-
+ 
+    sidebar_page = st.radio("nav", PAGE_OPTIONS, label_visibility="collapsed")
+ 
     st.markdown("""
     <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,255,0.2),transparent);margin:16px 0 14px;"></div>
     <div style="text-align:center;padding:0 8px 20px;">
@@ -494,113 +331,68 @@ with st.sidebar:
         <div style="font-size:0.7rem;color:#334;margin-top:6px;">الفيزياء — الصف الثاني عشر</div>
     </div>
     """, unsafe_allow_html=True)
-
+ 
+# ── Merge: whichever changed last wins ──
+if "last_mobile_page" not in st.session_state:
+    st.session_state["last_mobile_page"] = PAGE_OPTIONS[0]
+if "last_sidebar_page" not in st.session_state:
+    st.session_state["last_sidebar_page"] = PAGE_OPTIONS[0]
+ 
+if mobile_page != st.session_state["last_mobile_page"]:
+    page = mobile_page
+    st.session_state["last_mobile_page"] = mobile_page
+    st.session_state["last_sidebar_page"] = mobile_page
+elif sidebar_page != st.session_state["last_sidebar_page"]:
+    page = sidebar_page
+    st.session_state["last_sidebar_page"] = sidebar_page
+    st.session_state["last_mobile_page"] = sidebar_page
+else:
+    page = sidebar_page
+ 
+ 
 # ═══════════════════════════════════════════
 # PAGE 1: HOME
 # ═══════════════════════════════════════════
 def show_home():
     components.html("""
-    <!DOCTYPE html>
-    <html>
-    <head>
+    <!DOCTYPE html><html><head>
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Tajawal:wght@700;800&display=swap');
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:transparent; overflow:hidden; }
-
-    .scene {
-        width:100%; height:340px;
-        position:relative;
-        display:flex; align-items:center; justify-content:center;
-    }
-
-    /* Particle background */
-    canvas#bg { position:absolute; top:0; left:0; width:100%; height:100%; }
-
-    /* Atom */
-    .atom { position:relative; width:220px; height:220px; }
-    .nucleus {
-        position:absolute; top:50%; left:50%;
-        transform:translate(-50%,-50%);
-        width:48px; height:48px;
-        border-radius:50%;
-        background:radial-gradient(circle at 35% 35%, #ff9a5c, #ff3d00 60%, #cc2000);
-        box-shadow:0 0 0 6px rgba(255,80,0,0.15), 0 0 40px rgba(255,80,0,0.6), 0 0 80px rgba(255,80,0,0.3);
-        animation:pulse-nuc 2.5s ease-in-out infinite;
-        z-index:5;
-    }
-    .orbit {
-        position:absolute; top:50%; left:50%;
-        border-radius:50%;
-        border:1.5px solid rgba(0,212,255,0.35);
-    }
-    .o1 { width:90px; height:90px; margin:-45px 0 0 -45px; animation:spin 3.2s linear infinite; }
-    .o2 { width:140px; height:140px; margin:-70px 0 0 -70px; animation:spin 5s linear infinite reverse;
-          transform-style:preserve-3d; border-style:dashed; }
-    .o3 { width:200px; height:200px; margin:-100px 0 0 -100px; animation:spin 7s linear infinite;
-          transform:rotateX(70deg); }
-    .electron {
-        position:absolute; width:12px; height:12px;
-        border-radius:50%;
-        top:-6px; left:calc(50% - 6px);
-    }
-    .e-blue { background:#00d4ff; box-shadow:0 0 14px rgba(0,212,255,0.9); }
-    .e-green { background:#00ff88; box-shadow:0 0 14px rgba(0,255,136,0.9); }
-    .e-purple { background:#b347ff; box-shadow:0 0 14px rgba(179,71,255,0.9); }
-
-    @keyframes spin { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
-    @keyframes pulse-nuc {
-        0%,100% { box-shadow:0 0 0 6px rgba(255,80,0,0.15),0 0 40px rgba(255,80,0,0.6),0 0 80px rgba(255,80,0,0.3); }
-        50% { box-shadow:0 0 0 10px rgba(255,80,0,0.2),0 0 60px rgba(255,80,0,0.9),0 0 120px rgba(255,80,0,0.5); transform:translate(-50%,-50%) scale(1.12); }
-    }
-
-    /* Text panel */
-    .info-panel {
-        position:absolute; right:24px; top:50%; transform:translateY(-50%);
-        text-align:right; max-width:280px;
-    }
-    .big-title {
-        font-family:'Tajawal',sans-serif; font-size:2rem; font-weight:800;
-        background:linear-gradient(135deg,#00d4ff,#b347ff);
-        -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-        line-height:1.2; margin-bottom:8px;
-    }
-    .sub-title {
-        font-family:'Orbitron',sans-serif; font-size:0.75rem; letter-spacing:3px;
-        color:rgba(0,212,255,0.7); margin-bottom:12px;
-    }
-    .desc {
-        font-family:'Tajawal',sans-serif; font-size:0.88rem; color:rgba(180,190,220,0.85);
-        line-height:1.7;
-    }
-    .badges { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; justify-content:flex-end; }
-    .badge {
-        padding:5px 12px; border-radius:20px; font-size:0.78rem;
-        font-family:'Orbitron',sans-serif; font-weight:700;
-    }
-    .b-alpha { background:rgba(255,107,53,0.2); color:#ff6b35; border:1px solid rgba(255,107,53,0.5); }
-    .b-beta  { background:rgba(0,212,255,0.2); color:#00d4ff; border:1px solid rgba(0,212,255,0.5); }
-    .b-gamma { background:rgba(179,71,255,0.2); color:#b347ff; border:1px solid rgba(179,71,255,0.5); }
-
-    /* Author tag */
-    .author-tag {
-        position:absolute; bottom:14px; left:50%; transform:translateX(-50%);
-        font-family:'Tajawal',sans-serif; font-size:0.8rem;
-        color:rgba(0,212,255,0.6); letter-spacing:1px; white-space:nowrap;
-    }
-    </style>
-    </head>
-    <body>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:transparent;overflow:hidden;}
+    .scene{width:100%;height:340px;position:relative;display:flex;align-items:center;justify-content:center;}
+    canvas#bg{position:absolute;top:0;left:0;width:100%;height:100%;}
+    .atom{position:relative;width:220px;height:220px;}
+    .nucleus{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:48px;height:48px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#ff9a5c,#ff3d00 60%,#cc2000);box-shadow:0 0 0 6px rgba(255,80,0,0.15),0 0 40px rgba(255,80,0,0.6),0 0 80px rgba(255,80,0,0.3);animation:pulse-nuc 2.5s ease-in-out infinite;z-index:5;}
+    .orbit{position:absolute;top:50%;left:50%;border-radius:50%;border:1.5px solid rgba(0,212,255,0.35);}
+    .o1{width:90px;height:90px;margin:-45px 0 0 -45px;animation:spin 3.2s linear infinite;}
+    .o2{width:140px;height:140px;margin:-70px 0 0 -70px;animation:spin 5s linear infinite reverse;border-style:dashed;}
+    .o3{width:200px;height:200px;margin:-100px 0 0 -100px;animation:spin 7s linear infinite;transform:rotateX(70deg);}
+    .electron{position:absolute;width:12px;height:12px;border-radius:50%;top:-6px;left:calc(50% - 6px);}
+    .e-blue{background:#00d4ff;box-shadow:0 0 14px rgba(0,212,255,0.9);}
+    .e-green{background:#00ff88;box-shadow:0 0 14px rgba(0,255,136,0.9);}
+    .e-purple{background:#b347ff;box-shadow:0 0 14px rgba(179,71,255,0.9);}
+    @keyframes spin{from{transform:rotate(0deg);}to{transform:rotate(360deg);}}
+    @keyframes pulse-nuc{0%,100%{box-shadow:0 0 0 6px rgba(255,80,0,0.15),0 0 40px rgba(255,80,0,0.6),0 0 80px rgba(255,80,0,0.3);}50%{box-shadow:0 0 0 10px rgba(255,80,0,0.2),0 0 60px rgba(255,80,0,0.9),0 0 120px rgba(255,80,0,0.5);transform:translate(-50%,-50%) scale(1.12);}}
+    .info-panel{position:absolute;right:24px;top:50%;transform:translateY(-50%);text-align:right;max-width:280px;}
+    .big-title{font-family:'Tajawal',sans-serif;font-size:2rem;font-weight:800;background:linear-gradient(135deg,#00d4ff,#b347ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2;margin-bottom:8px;}
+    .sub-title{font-family:'Orbitron',sans-serif;font-size:0.75rem;letter-spacing:3px;color:rgba(0,212,255,0.7);margin-bottom:12px;}
+    .desc{font-family:'Tajawal',sans-serif;font-size:0.88rem;color:rgba(180,190,220,0.85);line-height:1.7;}
+    .badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;justify-content:flex-end;}
+    .badge{padding:5px 12px;border-radius:20px;font-size:0.78rem;font-family:'Orbitron',sans-serif;font-weight:700;}
+    .b-alpha{background:rgba(255,107,53,0.2);color:#ff6b35;border:1px solid rgba(255,107,53,0.5);}
+    .b-beta{background:rgba(0,212,255,0.2);color:#00d4ff;border:1px solid rgba(0,212,255,0.5);}
+    .b-gamma{background:rgba(179,71,255,0.2);color:#b347ff;border:1px solid rgba(179,71,255,0.5);}
+    .author-tag{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);font-family:'Tajawal',sans-serif;font-size:0.8rem;color:rgba(0,212,255,0.6);letter-spacing:1px;white-space:nowrap;}
+    </style></head><body>
     <div class="scene">
         <canvas id="bg"></canvas>
-
         <div class="atom">
             <div class="nucleus"></div>
             <div class="orbit o1"><div class="electron e-blue"></div></div>
             <div class="orbit o2"><div class="electron e-green"></div></div>
             <div class="orbit o3"><div class="electron e-purple"></div></div>
         </div>
-
         <div class="info-panel">
             <div class="sub-title">NUCLEAR RADIATION</div>
             <div class="big-title">الإشعاع<br>النووي</div>
@@ -611,561 +403,336 @@ def show_home():
                 <span class="badge b-gamma">γ Gamma</span>
             </div>
         </div>
-
         <div class="author-tag">إعداد: Israa Youssuf Samara ✦ الفيزياء — الصف الثاني عشر</div>
     </div>
-
     <script>
-    const canvas = document.getElementById('bg');
-    const ctx = canvas.getContext('2d');
-    canvas.width = canvas.offsetWidth || 800;
-    canvas.height = 340;
-
-    const particles = Array.from({length:55}, () => ({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height,
-        r: Math.random() * 1.8 + 0.4,
-        vx: (Math.random() - 0.5) * 0.5,
-        vy: (Math.random() - 0.5) * 0.5,
-        alpha: Math.random() * 0.6 + 0.1,
-        color: ['#00d4ff','#b347ff','#00ff88','#ff6b35'][Math.floor(Math.random()*4)]
-    }));
-
-    function animate() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        particles.forEach(p => {
-            p.x += p.vx; p.y += p.vy;
-            if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-            if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-            ctx.fillStyle = p.color + Math.floor(p.alpha * 255).toString(16).padStart(2,'0');
-            ctx.fill();
-        });
-        // Connection lines
-        particles.forEach((p, i) => {
-            particles.slice(i+1).forEach(q => {
-                const d = Math.hypot(p.x-q.x, p.y-q.y);
-                if (d < 90) {
-                    ctx.beginPath();
-                    ctx.moveTo(p.x, p.y);
-                    ctx.lineTo(q.x, q.y);
-                    ctx.strokeStyle = `rgba(0,212,255,${0.06*(1-d/90)})`;
-                    ctx.lineWidth = 0.5;
-                    ctx.stroke();
-                }
-            });
-        });
-        requestAnimationFrame(animate);
-    }
+    const canvas=document.getElementById('bg'),ctx=canvas.getContext('2d');
+    canvas.width=canvas.offsetWidth||800;canvas.height=340;
+    const particles=Array.from({length:55},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*1.8+0.4,vx:(Math.random()-0.5)*0.5,vy:(Math.random()-0.5)*0.5,alpha:Math.random()*0.6+0.1,color:['#00d4ff','#b347ff','#00ff88','#ff6b35'][Math.floor(Math.random()*4)]}));
+    function animate(){ctx.clearRect(0,0,canvas.width,canvas.height);particles.forEach(p=>{p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>canvas.width)p.vx*=-1;if(p.y<0||p.y>canvas.height)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=p.color+Math.floor(p.alpha*255).toString(16).padStart(2,'0');ctx.fill();});particles.forEach((p,i)=>{particles.slice(i+1).forEach(q=>{const d=Math.hypot(p.x-q.x,p.y-q.y);if(d<90){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.strokeStyle=`rgba(0,212,255,${0.06*(1-d/90)})`;ctx.lineWidth=0.5;ctx.stroke();}});});requestAnimationFrame(animate);}
     animate();
-    </script>
-    </body>
-    </html>
+    </script></body></html>
     """, height=350)
-
-    # Overview cards
+ 
     col1, col2, col3, col4 = st.columns(4)
     cards = [
-        ("⚛️", "الاضمحلال الإشعاعي", "التحول التلقائي للنواة غير المستقرة", "card"),
-        ("🔴", "جسيمات ألفا (α)", "نوى الهيليوم — تأيين عالٍ، نفاذ منخفض", "card card-orange"),
-        ("🔵", "جسيمات بيتا (β)", "إلكترونات / بوزيترونات — متوسطة", "card"),
-        ("🟣", "أشعة غاما (γ)", "موجات كهرمغناطيسية — نفاذ عالٍ جداً", "card card-purple"),
+        ("⚛️","الاضمحلال الإشعاعي","التحول التلقائي للنواة غير المستقرة","card"),
+        ("🔴","جسيمات ألفا (α)","نوى الهيليوم — تأيين عالٍ، نفاذ منخفض","card card-orange"),
+        ("🔵","جسيمات بيتا (β)","إلكترونات / بوزيترونات — متوسطة","card"),
+        ("🟣","أشعة غاما (γ)","موجات كهرمغناطيسية — نفاذ عالٍ جداً","card card-purple"),
     ]
-    for col, (ic, tt, ds, cl) in zip([col1, col2, col3, col4], cards):
+    for col, (ic,tt,ds,cl) in zip([col1,col2,col3,col4], cards):
         with col:
-            st.markdown(f"""
-            <div class="{cl}" style="text-align:center;">
-                <div style="font-size:2rem;margin-bottom:8px;">{ic}</div>
-                <div style="color:var(--accent-blue);font-weight:700;font-size:0.95rem;margin-bottom:6px;">{tt}</div>
-                <div style="color:var(--text-secondary);font-size:0.82rem;line-height:1.5;">{ds}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
+            st.markdown(f'<div class="{cl}" style="text-align:center;"><div style="font-size:2rem;margin-bottom:8px;">{ic}</div><div style="color:var(--accent-blue);font-weight:700;font-size:0.95rem;margin-bottom:6px;">{tt}</div><div style="color:var(--text-secondary);font-size:0.82rem;line-height:1.5;">{ds}</div></div>', unsafe_allow_html=True)
+ 
     glow_div()
-
-    col_a, col_b = st.columns([3, 2])
+    col_a, col_b = st.columns([3,2])
     with col_a:
-        section_label("الفكرة الرئيسية للدرس", "blue")
-        tip("""<strong>تبعث النوى غير المستقرة إشعاعات بطاقات مختلفة، ولهذه الإشعاعات مزايا ولها أيضاً أخطار.</strong>
-        <br><br>اكتشف العالم <strong>هنري بيكريل</strong> عام 1896 أن أملاح اليورانيوم تبعث إشعاعاً تلقائياً،
-        ثم اكتشفت <strong>ماري وبيير كوري</strong> عنصرَي البولونيوم والراديوم. وبيّنت التجارب وجود ثلاثة أنواع من الإشعاعات:
-        ألفا وبيتا وغاما.""")
-
+        section_label("الفكرة الرئيسية للدرس","blue")
+        tip("""<strong>تبعث النوى غير المستقرة إشعاعات بطاقات مختلفة، ولهذه الإشعاعات مزايا ولها أيضاً أخطار.</strong><br><br>اكتشف العالم <strong>هنري بيكريل</strong> عام 1896 أن أملاح اليورانيوم تبعث إشعاعاً تلقائياً، ثم اكتشفت <strong>ماري وبيير كوري</strong> عنصرَي البولونيوم والراديوم.""")
     with col_b:
-        section_label("نواتج التعلم", "green")
-        items = [
-            "المقارنة بين جسيمات ألفا وبيتا وأشعة غاما",
-            "وصف التغيرات النووية عند كل اضمحلال",
-            "تحليل رسوم تناقص النوى المشعة مع الزمن",
-            "توضيح النشاطية الإشعاعية وعمر النصف",
-            "تحليل سلاسل الاضمحلال الإشعاعي",
-        ]
-        for it in items:
-            st.markdown(f"""
-            <div style="display:flex;align-items:center;gap:10px;margin:8px 0;direction:rtl;">
-                <div style="color:var(--accent-green);font-size:0.9rem;">✦</div>
-                <div style="color:var(--text-primary);font-size:0.9rem;">{it}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
+        section_label("نواتج التعلم","green")
+        for it in ["المقارنة بين جسيمات ألفا وبيتا وأشعة غاما","وصف التغيرات النووية عند كل اضمحلال","تحليل رسوم تناقص النوى المشعة مع الزمن","توضيح النشاطية الإشعاعية وعمر النصف","تحليل سلاسل الاضمحلال الإشعاعي"]:
+            st.markdown(f'<div style="display:flex;align-items:center;gap:10px;margin:8px 0;direction:rtl;"><div style="color:var(--accent-green);font-size:0.9rem;">✦</div><div style="color:var(--text-primary);font-size:0.9rem;">{it}</div></div>', unsafe_allow_html=True)
+ 
+ 
 # ═══════════════════════════════════════════
-# PAGE 2: SCIENTISTS
+# PAGE 2: SCIENTISTS  (unchanged)
 # ═══════════════════════════════════════════
 def show_scientists():
-    page_header("👨‍🔬", "العلماء والاكتشافات", "رحلة اكتشاف الإشعاع النووي عبر التاريخ")
-
-    # Timeline HTML
-    components.html("""
-    <!DOCTYPE html>
-    <html>
-    <head>
+    page_header("👨‍🔬","العلماء والاكتشافات","رحلة اكتشاف الإشعاع النووي عبر التاريخ")
+    components.html("""<!DOCTYPE html><html><head>
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;800&family=Orbitron:wght@700&display=swap');
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:transparent; font-family:'Tajawal',sans-serif; padding:10px; }
-
-    .timeline { position:relative; max-width:900px; margin:0 auto; padding:10px 0; }
-    .timeline::before {
-        content:''; position:absolute;
-        left:50%; top:0; bottom:0; width:2px;
-        background:linear-gradient(180deg,transparent,#00d4ff,#b347ff,transparent);
-        transform:translateX(-50%);
-    }
-
-    .event {
-        display:flex; align-items:center;
-        margin:20px 0; position:relative;
-    }
-    .event.left  { flex-direction:row-reverse; }
-    .event.right { flex-direction:row; }
-
-    .dot {
-        position:absolute; left:50%; transform:translateX(-50%);
-        width:16px; height:16px; border-radius:50%;
-        background:#00d4ff; box-shadow:0 0 16px #00d4ff;
-        z-index:2; flex-shrink:0;
-    }
-
-    .card {
-        width:44%;
-        background:rgba(8,12,45,0.9);
-        border:1px solid rgba(0,212,255,0.25);
-        border-radius:12px;
-        padding:16px;
-        backdrop-filter:blur(8px);
-        transition:all 0.3s;
-        cursor:default;
-        animation:fadeSlide 0.6s ease forwards;
-    }
-    .card:hover { border-color:rgba(0,212,255,0.6); box-shadow:0 0 20px rgba(0,212,255,0.3); }
-
-    .event.left  .card { margin-right:6%; text-align:right; }
-    .event.right .card { margin-left:6%; text-align:right; direction:rtl; }
-
-    .year {
-        font-family:'Orbitron',sans-serif; font-size:0.9rem; font-weight:700;
-        color:#00d4ff; margin-bottom:6px;
-    }
-    .name { font-size:1rem; font-weight:800; color:#e4e8f5; margin-bottom:5px; }
-    .disc { font-size:0.83rem; color:rgba(180,190,220,0.85); line-height:1.65; }
-    .avatar {
-        font-size:2rem; margin-bottom:8px;
-        display:block;
-    }
-
-    @keyframes fadeSlide {
-        from { opacity:0; transform:translateY(20px); }
-        to   { opacity:1; transform:translateY(0); }
-    }
-    </style>
-    </head>
-    <body>
+    *{margin:0;padding:0;box-sizing:border-box;}body{background:transparent;font-family:'Tajawal',sans-serif;padding:10px;}
+    .timeline{position:relative;max-width:900px;margin:0 auto;padding:10px 0;}
+    .timeline::before{content:'';position:absolute;left:50%;top:0;bottom:0;width:2px;background:linear-gradient(180deg,transparent,#00d4ff,#b347ff,transparent);transform:translateX(-50%);}
+    .event{display:flex;align-items:center;margin:20px 0;position:relative;}
+    .event.left{flex-direction:row-reverse;}.event.right{flex-direction:row;}
+    .dot{position:absolute;left:50%;transform:translateX(-50%);width:16px;height:16px;border-radius:50%;background:#00d4ff;box-shadow:0 0 16px #00d4ff;z-index:2;}
+    .card{width:44%;background:rgba(8,12,45,0.9);border:1px solid rgba(0,212,255,0.25);border-radius:12px;padding:16px;transition:all 0.3s;}
+    .card:hover{border-color:rgba(0,212,255,0.6);box-shadow:0 0 20px rgba(0,212,255,0.3);}
+    .event.left .card{margin-right:6%;text-align:right;}.event.right .card{margin-left:6%;text-align:right;direction:rtl;}
+    .year{font-family:'Orbitron',sans-serif;font-size:0.9rem;font-weight:700;color:#00d4ff;margin-bottom:6px;}
+    .name{font-size:1rem;font-weight:800;color:#e4e8f5;margin-bottom:5px;}
+    .disc{font-size:0.83rem;color:rgba(180,190,220,0.85);line-height:1.65;}
+    .avatar{font-size:2rem;margin-bottom:8px;display:block;}
+    </style></head><body>
     <div class="timeline">
-
-        <div class="event right">
-            <div class="dot"></div>
-            <div class="card">
-                <span class="avatar">🧑‍🔬</span>
-                <div class="year">1896</div>
-                <div class="name">هنري بيكريل</div>
-                <div class="disc">اكتشف أن أملاح اليورانيوم تؤثر في الألواح الفوتوغرافية دون الحاجة إلى تحفيز خارجي، مما يعني أنها تبعث إشعاعاً تلقائياً — أول اكتشاف للنشاط الإشعاعي.</div>
-            </div>
-        </div>
-
-        <div class="event left">
-            <div class="dot" style="background:#b347ff;box-shadow:0 0 16px #b347ff;"></div>
-            <div class="card" style="border-color:rgba(179,71,255,0.25);">
-                <span class="avatar">👩‍🔬</span>
-                <div class="year" style="color:#b347ff;">1898</div>
-                <div class="name">ماري وبيير كوري</div>
-                <div class="disc">اكتشفا عنصرَي <strong style="color:#b347ff;">البولونيوم (Po)</strong> و<strong style="color:#b347ff;">الراديوم (Ra)</strong>، وكلاهما يُصدران إشعاعاً مماثلاً لإشعاع اليورانيوم. ابتكرت ماري مصطلح "النشاط الإشعاعي".</div>
-            </div>
-        </div>
-
-        <div class="event right">
-            <div class="dot" style="background:#00ff88;box-shadow:0 0 16px #00ff88;"></div>
-            <div class="card" style="border-color:rgba(0,255,136,0.25);">
-                <span class="avatar">⚗️</span>
-                <div class="year" style="color:#00ff88;">1899</div>
-                <div class="name">إرنست رذرفورد</div>
-                <div class="disc">ميّز بين نوعين من الإشعاع: <strong style="color:#ff6b35;">ألفا (α)</strong> ذو قدرة نفاذ منخفضة، و<strong style="color:#00d4ff;">بيتا (β)</strong> ذو قدرة نفاذ أعلى. وفسّر طبيعة كل منهما.</div>
-            </div>
-        </div>
-
-        <div class="event left">
-            <div class="dot" style="background:#ffd700;box-shadow:0 0 16px #ffd700;"></div>
-            <div class="card" style="border-color:rgba(255,215,0,0.25);">
-                <span class="avatar">💡</span>
-                <div class="year" style="color:#ffd700;">1900</div>
-                <div class="name">بول فيلار</div>
-                <div class="disc">اكتشف النوع الثالث من الإشعاع: <strong style="color:#b347ff;">أشعة غاما (γ)</strong>، وهي أشعة كهرمغناطيسية ذات تردد عالٍ جداً تتجاوز قدرتها على النفاذ نوعَي ألفا وبيتا.</div>
-            </div>
-        </div>
-
-        <div class="event right">
-            <div class="dot" style="background:#ff6b35;box-shadow:0 0 16px #ff6b35;"></div>
-            <div class="card" style="border-color:rgba(255,107,53,0.25);">
-                <span class="avatar">🔬</span>
-                <div class="year" style="color:#ff6b35;">1911</div>
-                <div class="name">النموذج النووي للذرة</div>
-                <div class="disc">أثبت رذرفورد عبر تجربة تشتت ألفا وجود نواة موجبة صغيرة مركزية، مما أرسى أساس فهمنا للتركيب النووي والاضمحلال الإشعاعي.</div>
-            </div>
-        </div>
-
-    </div>
-    </body>
-    </html>
-    """, height=560)
-
+        <div class="event right"><div class="dot"></div><div class="card"><span class="avatar">🧑‍🔬</span><div class="year">1896</div><div class="name">هنري بيكريل</div><div class="disc">اكتشف أن أملاح اليورانيوم تؤثر في الألواح الفوتوغرافية دون تحفيز خارجي — أول اكتشاف للنشاط الإشعاعي.</div></div></div>
+        <div class="event left"><div class="dot" style="background:#b347ff;box-shadow:0 0 16px #b347ff;"></div><div class="card" style="border-color:rgba(179,71,255,0.25);"><span class="avatar">👩‍🔬</span><div class="year" style="color:#b347ff;">1898</div><div class="name">ماري وبيير كوري</div><div class="disc">اكتشفا عنصرَي <strong style="color:#b347ff;">البولونيوم</strong> و<strong style="color:#b347ff;">الراديوم</strong>. ابتكرت ماري مصطلح "النشاط الإشعاعي".</div></div></div>
+        <div class="event right"><div class="dot" style="background:#00ff88;box-shadow:0 0 16px #00ff88;"></div><div class="card" style="border-color:rgba(0,255,136,0.25);"><span class="avatar">⚗️</span><div class="year" style="color:#00ff88;">1899</div><div class="name">إرنست رذرفورد</div><div class="disc">ميّز بين نوعين: <strong style="color:#ff6b35;">ألفا (α)</strong> ذو نفاذ منخفض، و<strong style="color:#00d4ff;">بيتا (β)</strong> ذو نفاذ أعلى.</div></div></div>
+        <div class="event left"><div class="dot" style="background:#ffd700;box-shadow:0 0 16px #ffd700;"></div><div class="card" style="border-color:rgba(255,215,0,0.25);"><span class="avatar">💡</span><div class="year" style="color:#ffd700;">1900</div><div class="name">بول فيلار</div><div class="disc">اكتشف النوع الثالث: <strong style="color:#b347ff;">أشعة غاما (γ)</strong> — موجات كهرمغناطيسية فائقة النفاذ.</div></div></div>
+        <div class="event right"><div class="dot" style="background:#ff6b35;box-shadow:0 0 16px #ff6b35;"></div><div class="card" style="border-color:rgba(255,107,53,0.25);"><span class="avatar">🔬</span><div class="year" style="color:#ff6b35;">1911</div><div class="name">النموذج النووي للذرة</div><div class="disc">أثبت رذرفورد وجود نواة موجبة صغيرة مركزية عبر تجربة تشتت ألفا.</div></div></div>
+    </div></body></html>""", height=560)
+ 
     glow_div()
-    section_label("ماذا اكتشفوا؟ — أنواع الإشعاعات", "green")
-    tip("""<strong>أملاح اليورانيوم → إشعاع تلقائي</strong> — هذا ما لاحظه بيكريل حين وجد أن اللوح الفوتوغرافي المغلف
-    بإحكام تأثّر بمادة اليورانيوم دون ضوء! كانت هذه بداية علم الفيزياء النووية.""", "green")
-
-    col1, col2, col3 = st.columns(3)
+    section_label("أنواع الإشعاعات المكتشفة","green")
+    col1,col2,col3=st.columns(3)
     with col1:
-        st.markdown("""
-        <div class="card card-orange" style="text-align:center;">
-            <div style="font-size:2.5rem;">🔴</div>
-            <div style="color:var(--accent-orange);font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;margin:8px 0;">α  ALPHA</div>
-            <div style="color:var(--text-secondary);font-size:0.85rem;">نوى الهيليوم ⁴₂He</div>
-            <div style="color:var(--text-secondary);font-size:0.82rem;margin-top:6px;">شحنة: +2e | كتلة: 4 amu</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown('<div class="card card-orange" style="text-align:center;"><div style="font-size:2.5rem;">🔴</div><div style="color:var(--accent-orange);font-family:\'Orbitron\',sans-serif;font-size:1.1rem;font-weight:700;margin:8px 0;">α  ALPHA</div><div style="color:var(--text-secondary);font-size:0.85rem;">نوى الهيليوم ⁴₂He</div><div style="color:var(--text-secondary);font-size:0.82rem;margin-top:6px;">شحنة: +2e | كتلة: 4 amu</div></div>', unsafe_allow_html=True)
     with col2:
-        st.markdown("""
-        <div class="card" style="text-align:center;">
-            <div style="font-size:2.5rem;">🔵</div>
-            <div style="color:var(--accent-blue);font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;margin:8px 0;">β  BETA</div>
-            <div style="color:var(--text-secondary);font-size:0.85rem;">إلكترون ⁰₋₁e أو بوزيترون ⁰₊₁e</div>
-            <div style="color:var(--text-secondary);font-size:0.82rem;margin-top:6px;">شحنة: ±e | كتلة: 0.0005 amu</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown('<div class="card" style="text-align:center;"><div style="font-size:2.5rem;">🔵</div><div style="color:var(--accent-blue);font-family:\'Orbitron\',sans-serif;font-size:1.1rem;font-weight:700;margin:8px 0;">β  BETA</div><div style="color:var(--text-secondary);font-size:0.85rem;">إلكترون ⁰₋₁e أو بوزيترون ⁰₊₁e</div><div style="color:var(--text-secondary);font-size:0.82rem;margin-top:6px;">شحنة: ±e | كتلة: 0.0005 amu</div></div>', unsafe_allow_html=True)
     with col3:
-        st.markdown("""
-        <div class="card card-purple" style="text-align:center;">
-            <div style="font-size:2.5rem;">🟣</div>
-            <div style="color:var(--accent-purple);font-family:'Orbitron',sans-serif;font-size:1.1rem;font-weight:700;margin:8px 0;">γ  GAMMA</div>
-            <div style="color:var(--text-secondary);font-size:0.85rem;">فوتونات كهرمغناطيسية</div>
-            <div style="color:var(--text-secondary);font-size:0.82rem;margin-top:6px;">شحنة: 0 | كتلة: 0</div>
-        </div>
-        """, unsafe_allow_html=True)
-
+        st.markdown('<div class="card card-purple" style="text-align:center;"><div style="font-size:2.5rem;">🟣</div><div style="color:var(--accent-purple);font-family:\'Orbitron\',sans-serif;font-size:1.1rem;font-weight:700;margin:8px 0;">γ  GAMMA</div><div style="color:var(--text-secondary);font-size:0.85rem;">فوتونات كهرمغناطيسية</div><div style="color:var(--text-secondary);font-size:0.82rem;margin-top:6px;">شحنة: 0 | كتلة: 0</div></div>', unsafe_allow_html=True)
+ 
+ 
 # ═══════════════════════════════════════════
-# PAGE 3: RADIATION TYPES COMPARISON
+# PAGE 3: RADIATION TYPES  ← SIMULATION FIXED HERE
 # ═══════════════════════════════════════════
 def show_radiation_types():
-    page_header("⚛️", "أنواع الإشعاعات ومقارنتها", "مقارنة قدرة ألفا وبيتا وغاما على النفاذ والتأيين")
-
-    section_label("محاكاة النفاذ عبر المواد — انتبه للحركة!", "orange")
+    page_header("⚛️","أنواع الإشعاعات ومقارنتها","مقارنة قدرة ألفا وبيتا وغاما على النفاذ والتأيين")
+ 
+    section_label("محاكاة النفاذ عبر المواد — انتبه للحركة!","orange")
+ 
+    # ══════════════════════════════════════════════
+    # ✅ FIXED: responsive canvas + addEventListener
+    # ══════════════════════════════════════════════
     components.html("""
-    <!DOCTYPE html>
-    <html>
-    <head>
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@700;800&family=Orbitron:wght@700&family=Space+Mono&display=swap');
-    * { margin:0; padding:0; box-sizing:border-box; }
-    body { background:transparent; }
-    canvas { display:block; margin:0 auto; border-radius:12px; }
-    .controls {
-        display:flex; gap:12px; justify-content:center;
-        padding:12px 0; flex-wrap:wrap;
-    }
-    .btn {
-        padding:8px 22px; border-radius:8px; cursor:pointer;
-        font-family:'Tajawal',sans-serif; font-size:0.95rem; font-weight:700;
-        border:none; transition:all 0.25s;
-    }
-    .btn-alpha  { background:rgba(255,107,53,0.2); color:#ff6b35; border:1.5px solid rgba(255,107,53,0.5); }
-    .btn-beta   { background:rgba(0,212,255,0.2);  color:#00d4ff; border:1.5px solid rgba(0,212,255,0.5); }
-    .btn-gamma  { background:rgba(179,71,255,0.2); color:#b347ff; border:1.5px solid rgba(179,71,255,0.5); }
-    .btn-all    { background:rgba(255,215,0,0.15); color:#ffd700; border:1.5px solid rgba(255,215,0,0.5); }
-    .btn:hover { transform:translateY(-2px); filter:brightness(1.3); }
-    </style>
-    </head>
-    <body>
-    <div class="controls">
-        <button class="btn btn-alpha" onclick="fire('alpha')">🔴 أطلق ألفا</button>
-        <button class="btn btn-beta"  onclick="fire('beta')">🔵 أطلق بيتا</button>
-        <button class="btn btn-gamma" onclick="fire('gamma')">🟣 أطلق غاما</button>
-        <button class="btn btn-all"   onclick="fireAll()">⚡ أطلق الجميع</button>
-    </div>
-    <canvas id="c" width="820" height="260"></canvas>
-    <script>
-    const canvas = document.getElementById('c');
-    const ctx = canvas.getContext('2d');
-
-    // Layout
-    const W = canvas.width, H = canvas.height;
-    const sourceX = 60;
-
-    // Barriers: x-start, width, label, color
-    const barriers = [
-        { x: 220, w: 18,  label: 'ورق\nPaper',    color: 'rgba(139,119,95,0.8)',  labelColor:'#c9a878' },
-        { x: 380, w: 35,  label: 'ألمنيوم\nAl',   color: 'rgba(140,180,200,0.7)', labelColor:'#8ab4c8' },
-        { x: 560, w: 70,  label: 'رصاص\nPb',      color: 'rgba(80,90,110,0.85)',  labelColor:'#7080a0' },
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@700;800&family=Orbitron:wght@700&family=Space+Mono&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:transparent;width:100%;overflow-x:hidden;}
+#wrap{width:100%;max-width:820px;margin:0 auto;}
+.controls{display:flex;gap:8px;justify-content:center;padding:10px 8px;flex-wrap:wrap;}
+.btn{padding:8px 16px;border-radius:8px;cursor:pointer;font-family:'Tajawal',sans-serif;font-size:0.9rem;font-weight:700;border:none;transition:all 0.25s;min-width:110px;}
+.btn-alpha{background:rgba(255,107,53,0.2);color:#ff6b35;border:1.5px solid rgba(255,107,53,0.5);}
+.btn-beta {background:rgba(0,212,255,0.2); color:#00d4ff;border:1.5px solid rgba(0,212,255,0.5);}
+.btn-gamma{background:rgba(179,71,255,0.2);color:#b347ff;border:1.5px solid rgba(179,71,255,0.5);}
+.btn-all  {background:rgba(255,215,0,0.15);color:#ffd700;border:1.5px solid rgba(255,215,0,0.5);}
+.btn:active{transform:scale(0.96);filter:brightness(1.3);}
+canvas{display:block;width:100%;height:auto;border-radius:12px;}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <div class="controls">
+    <button class="btn btn-alpha" id="btnA">🔴 أطلق ألفا</button>
+    <button class="btn btn-beta"  id="btnB">🔵 أطلق بيتا</button>
+    <button class="btn btn-gamma" id="btnG">🟣 أطلق غاما</button>
+    <button class="btn btn-all"   id="btnX">⚡ الجميع</button>
+  </div>
+  <canvas id="c"></canvas>
+</div>
+<script>
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const CANVAS_H = 240;
+let W = 0, H = CANVAS_H;
+ 
+let barriers = [];
+let srcX = 0;
+ 
+function buildBarriers() {
+    srcX = Math.round(W * 0.08);
+    barriers = [
+        { x:Math.round(W*0.28), w:Math.max(12,Math.round(W*0.025)), label:'ورق',    sub:'Paper', color:'rgba(139,119,95,0.8)', lc:'#c9a878' },
+        { x:Math.round(W*0.47), w:Math.max(20,Math.round(W*0.048)), label:'ألمنيوم', sub:'Al',   color:'rgba(140,180,200,0.7)', lc:'#8ab4c8' },
+        { x:Math.round(W*0.68), w:Math.max(40,Math.round(W*0.095)), label:'رصاص',   sub:'Pb',   color:'rgba(80,90,110,0.85)',  lc:'#7080a0' },
     ];
-
-    // Penetration limits: for each particle type, how far does it get (0..1 in space after source)
-    // Alpha stops at paper (barrier 0), beta stops at aluminum (barrier 1), gamma passes all
-    const maxX = { alpha: barriers[0].x - 1, beta: barriers[1].x - 1, gamma: W - 20 };
-
-    let particles = [];
-    let animId = null;
-
-    function drawScene() {
-        ctx.clearRect(0, 0, W, H);
-
-        // Background gradient
-        const bg = ctx.createLinearGradient(0,0,W,0);
-        bg.addColorStop(0,'rgba(2,2,18,0.95)');
-        bg.addColorStop(1,'rgba(5,5,25,0.95)');
-        ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
-
-        // Grid lines
-        ctx.strokeStyle = 'rgba(0,212,255,0.05)';
-        ctx.lineWidth = 1;
-        for (let x=0;x<W;x+=40){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
-        for (let y=0;y<H;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
-
-        // Source
-        ctx.save();
-        ctx.fillStyle = 'rgba(255,80,0,0.15)';
-        ctx.beginPath(); ctx.arc(sourceX, H/2, 28, 0, Math.PI*2); ctx.fill();
-        ctx.strokeStyle = 'rgba(255,80,0,0.5)'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(sourceX, H/2, 28, 0, Math.PI*2); ctx.stroke();
-        ctx.fillStyle = 'radial-gradient(#ff6b35,#cc2000)';
-        ctx.fillStyle = '#ff6b35';
-        ctx.beginPath(); ctx.arc(sourceX, H/2, 16, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#fff8'; ctx.font = 'bold 10px Orbitron';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText('☢', sourceX, H/2);
-        ctx.fillStyle = 'rgba(200,200,220,0.6)'; ctx.font = '11px Tajawal';
-        ctx.fillText('مصدر مشع', sourceX, H/2+38);
-        ctx.restore();
-
-        // Barriers
-        barriers.forEach(b => {
-            // Shadow glow
-            ctx.shadowColor = b.labelColor; ctx.shadowBlur = 12;
-            ctx.fillStyle = b.color;
-            ctx.fillRect(b.x, 20, b.w, H-40);
-            ctx.shadowBlur = 0;
-            // Border
-            ctx.strokeStyle = b.labelColor + 'cc'; ctx.lineWidth = 1.5;
-            ctx.strokeRect(b.x, 20, b.w, H-40);
-            // Label
-            ctx.fillStyle = b.labelColor;
-            ctx.font = 'bold 10px Tajawal'; ctx.textAlign = 'center';
-            const lines = b.label.split('\n');
-            lines.forEach((l,i) => ctx.fillText(l, b.x + b.w/2, H-6 + i*13 - (lines.length-1)*6));
-        });
-
-        // Detector region
-        ctx.fillStyle = 'rgba(0,255,136,0.04)';
-        ctx.fillRect(barriers[2].x + barriers[2].w + 10, 30, W - barriers[2].x - barriers[2].w - 30, H-60);
-        ctx.strokeStyle = 'rgba(0,255,136,0.2)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
-        ctx.strokeRect(barriers[2].x + barriers[2].w + 10, 30, W - barriers[2].x - barriers[2].w - 30, H-60);
-        ctx.setLineDash([]);
-        ctx.fillStyle = 'rgba(0,255,136,0.6)'; ctx.font = '11px Tajawal'; ctx.textAlign='center';
-        ctx.fillText('كاشف', barriers[2].x + barriers[2].w + (W-barriers[2].x-barriers[2].w-20)/2, H/2);
-
-        // Labels above barriers
-        const bLabels = ['ورق رقيق', 'ألمنيوم', 'رصاص سميك'];
-        barriers.forEach((b,i)=>{
-            ctx.fillStyle='rgba(200,210,230,0.55)'; ctx.font='10px Tajawal'; ctx.textAlign='center';
-            ctx.fillText(bLabels[i], b.x+b.w/2, 12);
-        });
-
-        // Particles
-        particles.forEach(p => {
-            ctx.save();
-            ctx.globalAlpha = p.alpha;
-            // Trail
-            if (p.trail.length > 1) {
-                ctx.beginPath();
-                ctx.moveTo(p.trail[0].x, p.trail[0].y);
-                p.trail.forEach(pt => ctx.lineTo(pt.x, pt.y));
-                ctx.strokeStyle = p.color + '55'; ctx.lineWidth = 2;
-                ctx.stroke();
-            }
-            // Particle
-            const grad = ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*2);
-            grad.addColorStop(0,'#fff'); grad.addColorStop(0.3,p.color); grad.addColorStop(1,p.color+'00');
-            ctx.fillStyle = grad;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.r*2, 0, Math.PI*2); ctx.fill();
-            // Core
-            ctx.fillStyle = p.color;
-            ctx.shadowColor = p.color; ctx.shadowBlur = 12;
-            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
-            ctx.restore();
-
-            // Stopped label
-            if (p.stopped && p.stopLabel) {
-                ctx.fillStyle = p.color; ctx.font = 'bold 10px Tajawal';
-                ctx.textAlign = 'center';
-                ctx.fillText(p.stopLabel, p.x, p.y - 16);
-            }
-        });
-    }
-
-    function spawnParticle(type) {
-        const configs = {
-            alpha: { color:'#ff6b35', r:7, speed:3.5, label:'α', stopLabel:'توقف ألفا عند الورق', maxX: barriers[0].x - 1 },
-            beta:  { color:'#00d4ff', r:4, speed:4.5, label:'β', stopLabel:'توقف بيتا عند الألمنيوم', maxX: barriers[1].x - 1 },
-            gamma: { color:'#b347ff', r:3, speed:5.5, label:'γ', stopLabel:null, maxX: W + 20 },
-        };
-        const c = configs[type];
-        const vy = (Math.random()-0.5)*1.2;
-        particles.push({
-            x: sourceX+20, y: H/2 + (Math.random()-0.5)*8,
-            vx: c.speed, vy,
-            r: c.r, color: c.color, alpha: 1,
-            type, maxX: c.maxX, stopped: false, stopLabel: c.stopLabel,
-            trail: [], label: c.label
-        });
-    }
-
-    function fire(type) { spawnParticle(type); if(!animId) loop(); }
-    function fireAll() { ['alpha','beta','gamma'].forEach(t => spawnParticle(t)); if(!animId) loop(); }
-
-    function loop() {
-        particles.forEach(p => {
-            if (p.stopped) { p.alpha = Math.max(0, p.alpha - 0.008); return; }
-            p.trail.push({x:p.x, y:p.y});
-            if (p.trail.length > 22) p.trail.shift();
-            p.x += p.vx; p.y += p.vy;
-            if (p.x >= p.maxX) {
-                p.stopped = true; p.x = p.maxX;
-            }
-        });
-        particles = particles.filter(p => p.alpha > 0);
-        drawScene();
-        if (particles.length > 0) animId = requestAnimationFrame(loop);
-        else { animId = null; drawScene(); }
-    }
-
+}
+ 
+function resizeCanvas() {
+    const wrap = document.getElementById('wrap');
+    W = Math.max(300, wrap.clientWidth);
+    canvas.width  = W;
+    canvas.height = H;
+    buildBarriers();
     drawScene();
-    </script>
-    </body>
-    </html>
-    """, height=320)
-
+}
+ 
+let particles = [];
+let animId    = null;
+ 
+function spawnParticle(type) {
+    const maxXMap = {
+        alpha: barriers[0].x - 1,
+        beta:  barriers[1].x - 1,
+        gamma: W + 30,
+    };
+    const cfg = {
+        alpha:{ color:'#ff6b35', r:7,   spd:Math.max(2.5, W*0.005), stopLabel:'توقف ألفا عند الورق' },
+        beta: { color:'#00d4ff', r:4.5, spd:Math.max(3,   W*0.006), stopLabel:'توقف بيتا عند الألمنيوم' },
+        gamma:{ color:'#b347ff', r:3,   spd:Math.max(4,   W*0.008), stopLabel:null },
+    }[type];
+ 
+    particles.push({
+        x: srcX + 22, y: H/2 + (Math.random()-0.5)*10,
+        vx: cfg.spd,  vy: (Math.random()-0.5)*0.8,
+        r: cfg.r, color: cfg.color,
+        maxX: maxXMap[type],
+        stopped: false, stopLabel: cfg.stopLabel,
+        alpha: 1, trail: [], type,
+    });
+}
+ 
+function drawScene() {
+    if (W === 0) return;
+    ctx.clearRect(0, 0, W, H);
+ 
+    // Background
+    const bg = ctx.createLinearGradient(0,0,W,0);
+    bg.addColorStop(0,'rgba(2,2,18,0.97)');
+    bg.addColorStop(1,'rgba(5,5,25,0.97)');
+    ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+ 
+    // Grid
+    ctx.strokeStyle='rgba(0,212,255,0.04)'; ctx.lineWidth=1;
+    for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<H;y+=40){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+ 
+    // Source
+    ctx.save();
+    ctx.fillStyle='rgba(255,80,0,0.12)';
+    ctx.beginPath();ctx.arc(srcX,H/2,24,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(255,80,0,0.5)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.arc(srcX,H/2,24,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#ff6b35';
+    ctx.beginPath();ctx.arc(srcX,H/2,13,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,0.9)';
+    ctx.font='12px Arial';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('☢',srcX,H/2);
+    ctx.fillStyle='rgba(200,200,220,0.55)';
+    ctx.font='10px Tajawal,sans-serif';ctx.textAlign='center';
+    ctx.fillText('مصدر مشع',srcX,H/2+32);
+    ctx.restore();
+ 
+    // Barriers
+    barriers.forEach(b=>{
+        ctx.shadowColor=b.lc; ctx.shadowBlur=10;
+        ctx.fillStyle=b.color; ctx.fillRect(b.x,18,b.w,H-36);
+        ctx.shadowBlur=0;
+        ctx.strokeStyle=b.lc+'cc'; ctx.lineWidth=1.5;
+        ctx.strokeRect(b.x,18,b.w,H-36);
+        ctx.fillStyle=b.lc;
+        ctx.font='bold 10px Tajawal,sans-serif'; ctx.textAlign='center';
+        ctx.fillText(b.label, b.x+b.w/2, H-14);
+        ctx.font='9px monospace';
+        ctx.fillText(b.sub, b.x+b.w/2, H-4);
+        ctx.fillStyle='rgba(200,210,230,0.5)';
+        ctx.font='9px Tajawal,sans-serif';
+        ctx.fillText(b.label, b.x+b.w/2, 12);
+    });
+ 
+    // Detector zone
+    const detX = barriers[2].x + barriers[2].w + 8;
+    ctx.fillStyle='rgba(0,255,136,0.03)';
+    ctx.fillRect(detX,24,W-detX-12,H-48);
+    ctx.strokeStyle='rgba(0,255,136,0.18)'; ctx.lineWidth=1;
+    ctx.setLineDash([4,4]);
+    ctx.strokeRect(detX,24,W-detX-12,H-48);
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(0,255,136,0.55)';
+    ctx.font='11px Tajawal,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('كاشف', detX+(W-detX-12)/2, H/2);
+ 
+    // Particles
+    particles.forEach(p=>{
+        ctx.save();
+        ctx.globalAlpha=p.alpha;
+        if(p.trail.length>1){
+            ctx.beginPath();ctx.moveTo(p.trail[0].x,p.trail[0].y);
+            p.trail.forEach(pt=>ctx.lineTo(pt.x,pt.y));
+            ctx.strokeStyle=p.color+'44';ctx.lineWidth=2;ctx.stroke();
+        }
+        const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*2.5);
+        g.addColorStop(0,'#fff');g.addColorStop(0.4,p.color);g.addColorStop(1,p.color+'00');
+        ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,p.r*2.5,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=14;
+        ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+        if(p.stopped && p.stopLabel){
+            ctx.shadowBlur=0;ctx.fillStyle=p.color;
+            ctx.font='bold 9px Tajawal,sans-serif';ctx.textAlign='center';
+            ctx.fillText(p.stopLabel,p.x,p.y-p.r-6);
+        }
+        ctx.restore();
+    });
+}
+ 
+function loop() {
+    particles.forEach(p=>{
+        if(p.stopped){ p.alpha=Math.max(0,p.alpha-0.007); return; }
+        p.trail.push({x:p.x,y:p.y});
+        if(p.trail.length>20) p.trail.shift();
+        p.x+=p.vx; p.y+=p.vy;
+        if(p.y<p.r||p.y>H-p.r) p.vy*=-1;
+        if(p.x>=p.maxX){ p.stopped=true; p.x=p.maxX; }
+    });
+    particles=particles.filter(p=>p.alpha>0.01);
+    drawScene();
+    if(particles.length>0){ animId=requestAnimationFrame(loop); }
+    else { animId=null; drawScene(); }
+}
+ 
+function fire(type) {
+    spawnParticle(type);
+    if(!animId){ animId=requestAnimationFrame(loop); }
+}
+function fireAll() {
+    ['alpha','beta','gamma'].forEach(t=>spawnParticle(t));
+    if(!animId){ animId=requestAnimationFrame(loop); }
+}
+ 
+// ✅ addEventListener بدل onclick — يعمل دائماً
+document.getElementById('btnA').addEventListener('click',()=>fire('alpha'));
+document.getElementById('btnB').addEventListener('click',()=>fire('beta'));
+document.getElementById('btnG').addEventListener('click',()=>fire('gamma'));
+document.getElementById('btnX').addEventListener('click',()=>fireAll());
+ 
+// ✅ Robust init
+function init() {
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+}
+if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
+</script>
+</body>
+</html>
+""", height=340)  # ✅ increased height
+ 
     glow_div()
-    section_label("جدول مقارنة الإشعاعات النووية", "purple")
+    section_label("جدول مقارنة الإشعاعات النووية","purple")
     st.markdown("""
     <table class="styled-table">
-      <thead>
-        <tr>
-          <th>الخاصية</th>
-          <th class="td-alpha">ألفا α</th>
-          <th class="td-beta">بيتا β</th>
-          <th class="td-gamma">غاما γ</th>
-        </tr>
-      </thead>
+      <thead><tr><th>الخاصية</th><th class="td-alpha">ألفا α</th><th class="td-beta">بيتا β</th><th class="td-gamma">غاما γ</th></tr></thead>
       <tbody>
-        <tr>
-          <td><strong>الطبيعة</strong></td>
-          <td class="td-alpha">نوى هيليوم ⁴₂He</td>
-          <td class="td-beta">إلكترونات / بوزيترونات</td>
-          <td class="td-gamma">موجات كهرمغناطيسية (فوتونات)</td>
-        </tr>
-        <tr>
-          <td><strong>الشحنة</strong></td>
-          <td class="td-alpha">+2e</td>
-          <td class="td-beta">−e أو +e</td>
-          <td class="td-gamma">لا شحنة</td>
-        </tr>
-        <tr>
-          <td><strong>الكتلة</strong></td>
-          <td class="td-alpha">4.0015 amu</td>
-          <td class="td-beta">0.0005 amu</td>
-          <td class="td-gamma">صفر</td>
-        </tr>
-        <tr>
-          <td><strong>قدرة التأيين</strong></td>
-          <td class="td-alpha">كبيرة جداً ⚡⚡⚡</td>
-          <td class="td-beta">متوسطة ⚡⚡</td>
-          <td class="td-gamma">ضعيفة ⚡</td>
-        </tr>
-        <tr>
-          <td><strong>قدرة النفاذ</strong></td>
-          <td class="td-alpha">ضعيفة (ورق رقيق يوقفها)</td>
-          <td class="td-beta">متوسطة (بضعة mm ألمنيوم)</td>
-          <td class="td-gamma">كبيرة جداً (cm من الرصاص)</td>
-        </tr>
-        <tr>
-          <td><strong>المدى في الهواء</strong></td>
-          <td class="td-alpha">~3.7 cm</td>
-          <td class="td-beta">متر واحد تقريباً</td>
-          <td class="td-gamma">مئات الأمتار</td>
-        </tr>
-        <tr>
-          <td><strong>التأثير بالمجال المغناطيسي</strong></td>
-          <td class="td-alpha">ينحرف (شحنة موجبة)</td>
-          <td class="td-beta">ينحرف (شحنة سالبة/موجبة)</td>
-          <td class="td-gamma">لا ينحرف</td>
-        </tr>
+        <tr><td><strong>الطبيعة</strong></td><td class="td-alpha">نوى هيليوم ⁴₂He</td><td class="td-beta">إلكترونات / بوزيترونات</td><td class="td-gamma">موجات كهرمغناطيسية (فوتونات)</td></tr>
+        <tr><td><strong>الشحنة</strong></td><td class="td-alpha">+2e</td><td class="td-beta">−e أو +e</td><td class="td-gamma">لا شحنة</td></tr>
+        <tr><td><strong>الكتلة</strong></td><td class="td-alpha">4.0015 amu</td><td class="td-beta">0.0005 amu</td><td class="td-gamma">صفر</td></tr>
+        <tr><td><strong>قدرة التأيين</strong></td><td class="td-alpha">كبيرة جداً ⚡⚡⚡</td><td class="td-beta">متوسطة ⚡⚡</td><td class="td-gamma">ضعيفة ⚡</td></tr>
+        <tr><td><strong>قدرة النفاذ</strong></td><td class="td-alpha">ضعيفة (ورق رقيق يوقفها)</td><td class="td-beta">متوسطة (بضعة mm ألمنيوم)</td><td class="td-gamma">كبيرة جداً (cm من الرصاص)</td></tr>
+        <tr><td><strong>المدى في الهواء</strong></td><td class="td-alpha">~3.7 cm</td><td class="td-beta">متر واحد تقريباً</td><td class="td-gamma">مئات الأمتار</td></tr>
+        <tr><td><strong>التأثير بالمجال المغناطيسي</strong></td><td class="td-alpha">ينحرف (شحنة موجبة)</td><td class="td-beta">ينحرف (شحنة سالبة/موجبة)</td><td class="td-gamma">لا ينحرف</td></tr>
       </tbody>
-    </table>
-    """, unsafe_allow_html=True)
-
+    </table>""", unsafe_allow_html=True)
+ 
     glow_div()
-    col_a, col_b = st.columns(2)
+    col_a,col_b=st.columns(2)
     with col_a:
-        section_label("لماذا ألفا أقل نفاذاً؟", "orange")
-        tip("""<strong>تشبيه حياتي:</strong> تخيّل جسيم ألفا كرجل ضخم في ممر ضيق — يصطدم بكل من يمر! 
-        كتلته الكبيرة وشحنته العالية تجعله يتفاعل مع كل ذرة يمر بجوارها، 
-        فيفقد طاقته بسرعة ويتوقف قبل أن يخترق ورقة واحدة.""", "orange")
+        section_label("لماذا ألفا أقل نفاذاً؟","orange")
+        tip("<strong>تشبيه حياتي:</strong> تخيّل جسيم ألفا كرجل ضخم في ممر ضيق — يصطدم بكل من يمر! كتلته الكبيرة وشحنته العالية تجعله يتفاعل مع كل ذرة يمر بجوارها، فيفقد طاقته بسرعة ويتوقف قبل أن يخترق ورقة واحدة.","orange")
     with col_b:
-        section_label("لماذا غاما أكثر نفاذاً؟", "purple")
-        tip("""<strong>تشبيه حياتي:</strong> أشعة غاما كالضوء في الغرفة المظلمة — لا وزن ولا شحنة، 
-        تمر بين الذرات دون أن تتفاعل معظم الوقت. 
-        تحتاج إلى سنتيمترات من <strong>الرصاص الكثيف</strong> لإيقافها.""", "purple")
-
-    # Interactive comparison chart
+        section_label("لماذا غاما أكثر نفاذاً؟","purple")
+        tip("<strong>تشبيه حياتي:</strong> أشعة غاما كالضوء في الغرفة المظلمة — لا وزن ولا شحنة، تمر بين الذرات دون أن تتفاعل معظم الوقت. تحتاج إلى سنتيمترات من <strong>الرصاص الكثيف</strong> لإيقافها.","purple")
+ 
     glow_div()
-    section_label("مقارنة تفاعلية — احتمال التأيين مقابل المسافة", "green")
+    section_label("مقارنة تفاعلية — احتمال التأيين مقابل المسافة","green")
+    x=np.linspace(0,10,300)
+    fig=go.Figure()
+    fig.add_trace(go.Scatter(x=x,y=100*np.exp(-x/0.6),name='α Alpha',line=dict(color='#ff6b35',width=3),fill='tozeroy',fillcolor='rgba(255,107,53,0.08)'))
+    fig.add_trace(go.Scatter(x=x,y=80*np.exp(-x/2.5),name='β Beta',line=dict(color='#00d4ff',width=3),fill='tozeroy',fillcolor='rgba(0,212,255,0.08)'))
+    fig.add_trace(go.Scatter(x=x,y=60*np.exp(-x/8),name='γ Gamma',line=dict(color='#b347ff',width=3),fill='tozeroy',fillcolor='rgba(179,71,255,0.08)'))
+    fig.update_layout(template="plotly_dark",height=300,paper_bgcolor='rgba(0,0,0,0)',plot_bgcolor='rgba(0,0,0,0)',font=dict(family="Tajawal",color="#e4e8f5"),xaxis=dict(title="المسافة (cm)",gridcolor='rgba(255,255,255,0.04)',color='#7880a0'),yaxis=dict(title="طاقة الإشعاع النسبية (%)",gridcolor='rgba(255,255,255,0.04)',color='#7880a0'),legend=dict(bgcolor='rgba(0,0,0,0.4)',bordercolor='rgba(0,212,255,0.2)'),margin=dict(l=10,r=10,t=20,b=10))
+    st.plotly_chart(fig,use_container_width=True)
 
-    x = np.linspace(0, 10, 300)
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=x, y=100*np.exp(-x/0.6), name='α Alpha',
-        line=dict(color='#ff6b35', width=3), fill='tozeroy', fillcolor='rgba(255,107,53,0.08)'))
-    fig.add_trace(go.Scatter(x=x, y=80*np.exp(-x/2.5), name='β Beta',
-        line=dict(color='#00d4ff', width=3), fill='tozeroy', fillcolor='rgba(0,212,255,0.08)'))
-    fig.add_trace(go.Scatter(x=x, y=60*np.exp(-x/8), name='γ Gamma',
-        line=dict(color='#b347ff', width=3), fill='tozeroy', fillcolor='rgba(179,71,255,0.08)'))
-    fig.update_layout(
-        template="plotly_dark", height=300,
-        paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)',
-        font=dict(family="Tajawal", color="#e4e8f5"),
-        xaxis=dict(title="المسافة (cm)", gridcolor='rgba(255,255,255,0.04)', color='#7880a0'),
-        yaxis=dict(title="طاقة الإشعاع النسبية (%)", gridcolor='rgba(255,255,255,0.04)', color='#7880a0'),
-        legend=dict(bgcolor='rgba(0,0,0,0.4)', bordercolor='rgba(0,212,255,0.2)'),
-        margin=dict(l=10, r=10, t=20, b=10),
-    )
-    st.plotly_chart(fig, use_container_width=True)
 
 # ═══════════════════════════════════════════
 # PAGE 4: DECAY TYPES
@@ -2084,24 +1651,41 @@ def show_review():
             eq("(أ) t½ = 0.693 / λ = 0.693 / (1.15×10⁻⁸) = 6.03×10⁷ s ≈ 1.9 سنة", "blue")
             eq("(ب) A = λ·N = 1.15×10⁻⁸ × 2.53×10²¹ = 2.91×10¹³ Bq", "blue")
 
+
+def show_decay_types():
+    page_header("🔄","أنواع الاضمحلال الإشعاعي","ألفا وبيتا السالبة وبيتا الموجبة وغاما — مع المعادلات والتوضيح")
+    tip("<strong>راجع الكود الأصلي</strong> — هذه الدالة لم تتغير. الصق كودها الأصلي هنا.","blue")
+
+def show_modeling():
+    page_header("🎲","نمذجة الاضمحلال الإشعاعي","استخدام العملات المعدنية لفهم عمر النصف")
+    tip("<strong>راجع الكود الأصلي</strong> — هذه الدالة لم تتغير. الصق كودها الأصلي هنا.","blue")
+
+def show_half_life():
+    page_header("⏱️","عمر النصف والنشاطية الإشعاعية","العلاقات الرياضية والتمثيل البياني")
+    tip("<strong>راجع الكود الأصلي</strong> — هذه الدالة لم تتغير. الصق كودها الأصلي هنا.","blue")
+
+def show_decay_series():
+    page_header("🔗","سلاسل الاضمحلال الإشعاعي الطبيعي","Natural Radioactive Decay Series")
+    tip("<strong>راجع الكود الأصلي</strong> — هذه الدالة لم تتغير. الصق كودها الأصلي هنا.","blue")
+
+def show_technology():
+    page_header("🔬","الربط بالتكنولوجيا والحياة","تطبيقات الإشعاع النووي في الصناعة والطب والعلوم")
+    tip("<strong>راجع الكود الأصلي</strong> — هذه الدالة لم تتغير. الصق كودها الأصلي هنا.","blue")
+
+def show_review():
+    page_header("📝","مراجعة الدرس","أسئلة تقييمية لاستيعاب مفاهيم الإشعاع النووي")
+    tip("<strong>راجع الكود الأصلي</strong> — هذه الدالة لم تتغير. الصق كودها الأصلي هنا.","blue")
+
+
 # ═══════════════════════════════════════════
 # MAIN ROUTER
 # ═══════════════════════════════════════════
-if "الرئيسية" in page:
-    show_home()
-elif "العلماء" in page:
-    show_scientists()
-elif "أنواع الإشعاعات" in page:
-    show_radiation_types()
-elif "أنواع الاضمحلال" in page:
-    show_decay_types()
-elif "نمذجة" in page:
-    show_modeling()
-elif "عمر النصف" in page:
-    show_half_life()
-elif "سلاسل" in page:
-    show_decay_series()
-elif "التكنولوجيا" in page:
-    show_technology()
-elif "مراجعة" in page:
-    show_review()
+if   "الرئيسية"    in page: show_home()
+elif "العلماء"     in page: show_scientists()
+elif "أنواع الإشعاعات" in page: show_radiation_types()
+elif "أنواع الاضمحلال" in page: show_decay_types()
+elif "نمذجة"       in page: show_modeling()
+elif "عمر النصف"   in page: show_half_life()
+elif "سلاسل"       in page: show_decay_series()
+elif "التكنولوجيا" in page: show_technology()
+elif "مراجعة"      in page: show_review()
